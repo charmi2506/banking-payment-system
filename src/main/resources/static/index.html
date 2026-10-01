@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegis Banking &amp; Payment Portal | Enterprise Financial Suite</title>
+  <meta name="description" content="Production-ready high throughput banking and payments transaction system with ACID guarantees, pessimistic write locking, and idempotency protection.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dark-theme">
+
+  <!-- Ambient Background Glows -->
+  <div class="glow-orb orb-1" aria-hidden="true"></div>
+  <div class="glow-orb orb-2" aria-hidden="true"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21h18"/>
+            <path d="M3 10h18"/>
+            <path d="M5 6l7-3 7 3"/>
+            <path d="M4 10v11"/>
+            <path d="M20 10v11"/>
+            <path d="M8 14v3"/>
+            <path d="M12 14v3"/>
+            <path d="M16 14v3"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">AEGIS<span class="brand-accent">PAY</span></span>
+          <span class="brand-badge">Core Banking v1.0</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <a href="/swagger-ui.html" target="_blank" class="nav-link" id="nav-swagger-btn" title="Open Interactive OpenAPI Swagger UI">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <span>Swagger UI</span>
+        </a>
+
+        <div class="system-status-pill" title="Pessimistic write locking & Redis rate limiting active">
+          <span class="pulse-dot"></span>
+          <span>Engine Active</span>
+        </div>
+
+        <!-- Authenticated Profile Menu -->
+        <div id="user-nav-profile" class="user-profile-menu hidden">
+          <div class="user-avatar" id="user-avatar-initials">JD</div>
+          <div class="user-info-text">
+            <span class="user-display-name" id="user-display-name">John Doe</span>
+            <span class="user-role-badge" id="user-role-badge">ROLE_USER</span>
+          </div>
+          <button id="logout-btn" class="btn-icon" title="Log out from Aegis Bank">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-wrapper">
+
+    <!-- ========================================== -->
+    <!-- SECTION 1: AUTHENTICATION (LOGIN / REGISTER) -->
+    <!-- ========================================== -->
+    <section id="auth-section" class="auth-section">
+      <div class="auth-hero">
+        <div class="hero-badge">ACID Guaranteed • Kafka Streams • Redis Cache</div>
+        <h1 class="hero-title">Next-Generation <span class="gradient-text">Banking &amp; Payment</span> Architecture</h1>
+        <p class="hero-subtitle">
+          Engineered with Java 21, Spring Boot 3, deterministic pessimistic write locking, and full idempotency verification for zero duplicate debits.
+        </p>
+
+        <div class="feature-highlights">
+          <div class="feature-item">
+            <div class="feature-icon">🛡️</div>
+            <div>
+              <h4>Pessimistic Locking</h4>
+              <p>Thread-safe balance mutations preventing double-spending &amp; race conditions.</p>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">⚡</div>
+            <div>
+              <h4>Idempotent Processing</h4>
+              <p>PostgreSQL-backed idempotency logs safeguarding against network retries.</p>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">⏱️</div>
+            <div>
+              <h4>Redis Rate Limiting</h4>
+              <p>Sliding window rate limit protection preventing abuse on sensitive financial routes.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-card-container">
+        <div class="auth-card glass-panel">
+          <div class="auth-tabs">
+            <button id="tab-login" class="tab-btn active" onclick="switchAuthTab('login')">Sign In</button>
+            <button id="tab-register" class="tab-btn" onclick="switchAuthTab('register')">Register Account</button>
+          </div>
+
+          <!-- Quick Test Credentials Pill -->
+          <div class="demo-credentials-banner">
+            <div class="banner-content">
+              <span class="banner-title">⚡ Quick Start Demo</span>
+              <span class="banner-desc">Auto-fill credentials or create your own profile</span>
+            </div>
+            <button type="button" class="btn-demo" id="btn-fill-demo" onclick="fillDemoCredentials()">Use Demo</button>
+          </div>
+
+          <!-- LOGIN FORM -->
+          <form id="login-form" class="auth-form" onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label for="login-username">Username or Email</label>
+              <div class="input-icon-wrapper">
+                <input type="text" id="login-username" required placeholder="e.g. john_doe" autocomplete="username">
+                <span class="input-icon">👤</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="login-password">Password</label>
+              <div class="input-icon-wrapper">
+                <input type="password" id="login-password" required placeholder="••••••••" autocomplete="current-password">
+                <span class="input-icon">🔒</span>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="btn-submit-login">
+              <span class="btn-text">Authenticate Session</span>
+              <span class="btn-spinner hidden"></span>
+            </button>
+          </form>
+
+          <!-- REGISTER FORM -->
+          <form id="register-form" class="auth-form hidden" onsubmit="handleRegister(event)">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="reg-first-name">First Name</label>
+                <input type="text" id="reg-first-name" required placeholder="John">
+              </div>
+              <div class="form-group">
+                <label for="reg-last-name">Last Name</label>
+                <input type="text" id="reg-last-name" required placeholder="Doe">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-username">Username</label>
+              <div class="input-icon-wrapper">
+                <input type="text" id="reg-username" required placeholder="johndoe_2026">
+                <span class="input-icon">👤</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-email">Email Address</label>
+              <div class="input-icon-wrapper">
+                <input type="email" id="reg-email" required placeholder="john.doe@example.com">
+                <span class="input-icon">✉️</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-password">Password (min 6 chars)</label>
+              <div class="input-icon-wrapper">
+                <input type="password" id="reg-password" minlength="6" required placeholder="Create secure password">
+                <span class="input-icon">🔒</span>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="btn-submit-register">
+              <span class="btn-text">Create Banking Profile</span>
+              <span class="btn-spinner hidden"></span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 2: AUTHENTICATED BANKING DASHBOARD -->
+    <!-- ========================================== -->
+    <section id="dashboard-section" class="dashboard-section hidden">
+      
+      <!-- Metrics Overview Ribbon -->
+      <div class="metrics-grid">
+        <div class="metric-card glass-panel">
+          <div class="metric-header">
+            <span class="metric-label">Total Liquid Net Worth</span>
+            <div class="metric-icon networth-icon">💎</div>
+          </div>
+          <div class="metric-value" id="metric-total-balance">$0.00</div>
+          <div class="metric-footer">
+            <span class="text-success" id="metric-accounts-count">0 Active Accounts</span>
+            <span class="text-muted">• Real-Time ACID Balance</span>
+          </div>
+        </div>
+
+        <div class="metric-card glass-panel">
+          <div class="metric-header">
+            <span class="metric-label">Inflow Credits</span>
+            <div class="metric-icon deposit-icon">↗</div>
+          </div>
+          <div class="metric-value text-success" id="metric-inflow">+$0.00</div>
+          <div class="metric-footer">
+            <span class="text-muted">Total deposits &amp; incoming transfers</span>
+          </div>
+        </div>
+
+        <div class="metric-card glass-panel">
+          <div class="metric-header">
+            <span class="metric-label">Outflow Debits</span>
+            <div class="metric-icon withdraw-icon">↘</div>
+          </div>
+          <div class="metric-value text-danger" id="metric-outflow">-$0.00</div>
+          <div class="metric-footer">
+            <span class="text-muted">Total withdrawals &amp; outgoing transfers</span>
+          </div>
+        </div>
+
+        <div class="metric-card glass-panel">
+          <div class="metric-header">
+            <span class="metric-label">Security &amp; Idempotency</span>
+            <div class="metric-icon lock-icon">⚡</div>
+          </div>
+          <div class="metric-value" style="font-size: 1.25rem; font-family: var(--font-mono);">PROTECTED</div>
+          <div class="metric-footer">
+            <span class="text-info">Pessimistic Locks Active</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Toolbar -->
+      <div class="action-bar glass-panel">
+        <div class="action-bar-left">
+          <h2 class="section-title">My Bank Accounts</h2>
+          <span class="section-subtitle">Manage checking and savings balances with instant transfer capability</span>
+        </div>
+        <div class="action-buttons-group">
+          <button class="btn btn-primary" onclick="openTransferModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+            <span>Transfer Money</span>
+          </button>
+          <button class="btn btn-secondary" onclick="openDepositModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Deposit</span>
+          </button>
+          <button class="btn btn-secondary" onclick="openWithdrawModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Withdraw</span>
+          </button>
+          <button class="btn btn-outline" onclick="openNewAccountModal()">
+            <span>+ Open New Account</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Accounts Cards Carousel / Grid -->
+      <div class="accounts-grid" id="accounts-container">
+        <!-- Rendered dynamically by JavaScript -->
+        <div class="accounts-loading-skeleton">Loading account vaults...</div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- SECTION 3: TRANSACTION AUDIT & STATEMENTS  -->
+      <!-- ========================================== -->
+      <div class="statements-section glass-panel">
+        <div class="statements-header">
+          <div>
+            <h2 class="section-title">Account Statements &amp; Audit Trail</h2>
+            <span class="section-subtitle">Real-time ledger events with multi-criteria dynamic filtering</span>
+          </div>
+          <div class="statements-actions">
+            <button class="btn btn-sm btn-outline" onclick="exportTransactionsCsv()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              <span>Export CSV</span>
+            </button>
+            <button class="btn btn-sm btn-icon" onclick="fetchTransactions(0)" title="Refresh Ledger">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Controls Bar -->
+        <div class="filter-bar">
+          <div class="filter-item">
+            <label for="filter-account">Account</label>
+            <select id="filter-account" onchange="fetchTransactions(0)">
+              <option value="">All Accounts</option>
+            </select>
+          </div>
+
+          <div class="filter-item">
+            <label for="filter-type">Type</label>
+            <select id="filter-type" onchange="fetchTransactions(0)">
+              <option value="">All Types</option>
+              <option value="TRANSFER">Transfer</option>
+              <option value="DEPOSIT">Deposit</option>
+              <option value="WITHDRAWAL">Withdrawal</option>
+            </select>
+          </div>
+
+          <div class="filter-item">
+            <label for="filter-status">Status</label>
+            <select id="filter-status" onchange="fetchTransactions(0)">
+              <option value="">All Statuses</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="PENDING">Pending</option>
+              <option value="FAILED">Failed</option>
+            </select>
+          </div>
+
+          <div class="filter-item">
+            <label for="filter-start-date">From Date</label>
+            <input type="date" id="filter-start-date" onchange="fetchTransactions(0)">
+          </div>
+
+          <div class="filter-item">
+            <label for="filter-end-date">To Date</label>
+            <input type="date" id="filter-end-date" onchange="fetchTransactions(0)">
+          </div>
+
+          <div class="filter-item reset-filter">
+            <button class="btn btn-sm btn-text" onclick="resetFilters()">Reset Filters</button>
+          </div>
+        </div>
+
+        <!-- Transactions Table Container -->
+        <div class="table-responsive">
+          <table class="statement-table">
+            <thead>
+              <tr>
+                <th>Reference ID</th>
+                <th>Type</th>
+                <th>Source &amp; Destination</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="transactions-tbody">
+              <!-- Rendered dynamically -->
+              <tr>
+                <td colspan="6" class="text-center py-4">No transactions found matching criteria.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-bar">
+          <div class="pagination-info" id="pagination-info">
+            Showing 0 transactions
+          </div>
+          <div class="pagination-actions">
+            <button class="btn btn-sm btn-secondary" id="btn-prev-page" onclick="changePage(-1)" disabled>
+              ← Previous
+            </button>
+            <span class="page-indicator" id="page-indicator">Page 1</span>
+            <button class="btn btn-sm btn-secondary" id="btn-next-page" onclick="changePage(1)" disabled>
+              Next →
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: MONEY TRANSFER WITH IDEMPOTENCY KEY -->
+  <!-- ========================================== -->
+  <div id="modal-transfer" class="modal-overlay hidden" onclick="handleModalOverlayClick(event, 'modal-transfer')">
+    <div class="modal-card glass-panel">
+      <div class="modal-header">
+        <div class="modal-title-wrapper">
+          <div class="modal-badge-icon">💸</div>
+          <div>
+            <h3 class="modal-title">Transfer Funds</h3>
+            <span class="modal-subtitle">Atomic transaction with pessimistic write locking</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('modal-transfer')">&times;</button>
+      </div>
+
+      <form id="transfer-form" onsubmit="executeTransfer(event)">
+        <div class="form-group">
+          <label for="transfer-source">From Account</label>
+          <select id="transfer-source" required onchange="updateTransferAvailableBalance()">
+            <!-- Options populated dynamically -->
+          </select>
+          <span class="input-hint" id="transfer-available-balance">Available: $0.00</span>
+        </div>
+
+        <div class="form-group">
+          <label for="transfer-destination">Destination Account Number</label>
+          <input type="text" id="transfer-destination" required placeholder="e.g. ACC10002" autocomplete="off">
+          <span class="input-hint">Must be an active account different from the source.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="transfer-amount">Amount (USD)</label>
+          <div class="input-icon-wrapper">
+            <span class="input-currency-prefix">$</span>
+            <input type="number" id="transfer-amount" required step="0.01" min="0.01" placeholder="0.00">
+          </div>
+          <div class="quick-amount-pills">
+            <button type="button" class="amount-pill" onclick="setTransferAmount(50)">$50</button>
+            <button type="button" class="amount-pill" onclick="setTransferAmount(100)">$100</button>
+            <button type="button" class="amount-pill" onclick="setTransferAmount(250)">$250</button>
+            <button type="button" class="amount-pill" onclick="setTransferAmount(500)">$500</button>
+          </div>
+        </div>
+
+        <!-- Idempotency Key Section -->
+        <div class="idempotency-box">
+          <div class="idempotency-header">
+            <div class="idempotency-label">
+              <span class="shield-icon">🛡️</span>
+              <span>Idempotency Guarantee Key</span>
+            </div>
+            <button type="button" class="btn-text-sm" onclick="regenerateIdempotencyKey()">Regenerate Key</button>
+          </div>
+          <input type="text" id="transfer-idempotency-key" class="idempotency-input" readonly>
+          <span class="idempotency-desc">Guarantees that network retries or duplicate clicks will never double-debit your balance.</span>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-transfer')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-transfer">
+            <span class="btn-text">Execute Transfer</span>
+            <span class="btn-spinner hidden"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: DEPOSIT FUNDS                       -->
+  <!-- ========================================== -->
+  <div id="modal-deposit" class="modal-overlay hidden" onclick="handleModalOverlayClick(event, 'modal-deposit')">
+    <div class="modal-card glass-panel">
+      <div class="modal-header">
+        <div class="modal-title-wrapper">
+          <div class="modal-badge-icon">💰</div>
+          <div>
+            <h3 class="modal-title">Deposit Funds</h3>
+            <span class="modal-subtitle">Instant credit with thread-safe locking</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('modal-deposit')">&times;</button>
+      </div>
+
+      <form id="deposit-form" onsubmit="executeDeposit(event)">
+        <div class="form-group">
+          <label for="deposit-account">Target Account</label>
+          <select id="deposit-account" required>
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="deposit-amount">Deposit Amount (USD)</label>
+          <div class="input-icon-wrapper">
+            <span class="input-currency-prefix">$</span>
+            <input type="number" id="deposit-amount" required step="0.01" min="0.01" placeholder="100.00">
+          </div>
+          <div class="quick-amount-pills">
+            <button type="button" class="amount-pill" onclick="setDepositAmount(50)">$50</button>
+            <button type="button" class="amount-pill" onclick="setDepositAmount(100)">$100</button>
+            <button type="button" class="amount-pill" onclick="setDepositAmount(500)">$500</button>
+            <button type="button" class="amount-pill" onclick="setDepositAmount(1000)">$1,000</button>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-deposit')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-deposit">
+            <span class="btn-text">Credit Account</span>
+            <span class="btn-spinner hidden"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: WITHDRAW FUNDS                      -->
+  <!-- ========================================== -->
+  <div id="modal-withdraw" class="modal-overlay hidden" onclick="handleModalOverlayClick(event, 'modal-withdraw')">
+    <div class="modal-card glass-panel">
+      <div class="modal-header">
+        <div class="modal-title-wrapper">
+          <div class="modal-badge-icon">🏧</div>
+          <div>
+            <h3 class="modal-title">Withdraw Funds</h3>
+            <span class="modal-subtitle">Pessimistically locked debit validation</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('modal-withdraw')">&times;</button>
+      </div>
+
+      <form id="withdraw-form" onsubmit="executeWithdraw(event)">
+        <div class="form-group">
+          <label for="withdraw-account">Source Account</label>
+          <select id="withdraw-account" required onchange="updateWithdrawAvailableBalance()">
+            <!-- Populated dynamically -->
+          </select>
+          <span class="input-hint" id="withdraw-available-balance">Available: $0.00</span>
+        </div>
+
+        <div class="form-group">
+          <label for="withdraw-amount">Withdrawal Amount (USD)</label>
+          <div class="input-icon-wrapper">
+            <span class="input-currency-prefix">$</span>
+            <input type="number" id="withdraw-amount" required step="0.01" min="0.01" placeholder="50.00">
+          </div>
+          <div class="quick-amount-pills">
+            <button type="button" class="amount-pill" onclick="setWithdrawAmount(50)">$50</button>
+            <button type="button" class="amount-pill" onclick="setWithdrawAmount(100)">$100</button>
+            <button type="button" class="amount-pill" onclick="setWithdrawAmount(200)">$200</button>
+            <button type="button" class="amount-pill" onclick="setWithdrawAmount(500)">$500</button>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-withdraw')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-withdraw">
+            <span class="btn-text">Confirm Withdrawal</span>
+            <span class="btn-spinner hidden"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: OPEN NEW BANK ACCOUNT               -->
+  <!-- ========================================== -->
+  <div id="modal-new-account" class="modal-overlay hidden" onclick="handleModalOverlayClick(event, 'modal-new-account')">
+    <div class="modal-card glass-panel">
+      <div class="modal-header">
+        <div class="modal-title-wrapper">
+          <div class="modal-badge-icon">🏦</div>
+          <div>
+            <h3 class="modal-title">Open New Bank Account</h3>
+            <span class="modal-subtitle">Checking or high-yield Savings account</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('modal-new-account')">&times;</button>
+      </div>
+
+      <form id="new-account-form" onsubmit="executeOpenAccount(event)">
+        <div class="form-group">
+          <label>Account Classification</label>
+          <div class="account-type-selector">
+            <label class="type-card-label">
+              <input type="radio" name="account-type" value="CHECKING" checked>
+              <div class="type-card">
+                <span class="type-title">Checking</span>
+                <span class="type-desc">Everyday transactions, zero fee transfers</span>
+              </div>
+            </label>
+            <label class="type-card-label">
+              <input type="radio" name="account-type" value="SAVINGS">
+              <div class="type-card">
+                <span class="type-title">Savings</span>
+                <span class="type-desc">High-yield capital growth vault</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="new-account-initial-deposit">Initial Opening Deposit (USD)</label>
+          <div class="input-icon-wrapper">
+            <span class="input-currency-prefix">$</span>
+            <input type="number" id="new-account-initial-deposit" step="0.01" min="0" placeholder="100.00" value="100.00">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-new-account')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-new-account">
+            <span class="btn-text">Open Vault Account</span>
+            <span class="btn-spinner hidden"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Application JS -->
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,6 +1,8 @@
 spring:
   application:
     name: banking-payment-system
+  cache:
+    type: redis
 
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/banking_db}
@@ -20,7 +22,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
 
   data:
     redis:
@@ -51,6 +52,24 @@ app:
   jwt:
     secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
     expiration-ms: ${JWT_EXPIRATION:86400000} # 24 hours
+  cache:
+    default-ttl-seconds: ${CACHE_TTL_SECONDS:300}
+    accounts-ttl-seconds: ${ACCOUNTS_CACHE_TTL_SECONDS:300}
+    user-accounts-ttl-seconds: ${USER_ACCOUNTS_CACHE_TTL_SECONDS:300}
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    auth-login:
+      limit: ${RATE_LIMIT_AUTH_LOGIN_MAX:5}
+      window-seconds: ${RATE_LIMIT_AUTH_LOGIN_WINDOW:60}
+    transfer:
+      limit: ${RATE_LIMIT_TRANSFER_MAX:10}
+      window-seconds: ${RATE_LIMIT_TRANSFER_WINDOW:60}
+    deposit:
+      limit: ${RATE_LIMIT_DEPOSIT_MAX:20}
+      window-seconds: ${RATE_LIMIT_DEPOSIT_WINDOW:60}
+    withdraw:
+      limit: ${RATE_LIMIT_WITHDRAW_MAX:10}
+      window-seconds: ${RATE_LIMIT_WITHDRAW_WINDOW:60}
   kafka:
     topics:
       transaction-events: banking.transaction.events
@@ -62,3 +81,16 @@ logging:
     root: INFO
     com.banking.payment: DEBUG
     org.hibernate.SQL: INFO
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    try-it-out-enabled: true
+    filter: true
+    display-request-duration: true
+

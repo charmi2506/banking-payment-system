@@ -1,5 +1,6 @@
 package com.banking.payment.service.impl;
 
+import com.banking.payment.config.RedisConfig;
 import com.banking.payment.dto.request.CreateAccountRequest;
 import com.banking.payment.dto.request.DepositWithdrawRequest;
 import com.banking.payment.dto.response.AccountResponse;
@@ -14,6 +15,9 @@ import com.banking.payment.repository.AccountRepository;
 import com.banking.payment.repository.UserRepository;
 import com.banking.payment.service.AccountService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +36,7 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
+    @CacheEvict(value = RedisConfig.USER_ACCOUNTS_CACHE, key = "#userId")
     public AccountResponse createAccount(Long userId, CreateAccountRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
@@ -51,7 +56,17 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Transactional
+    public AccountResponse createAccountForUsername(String username, CreateAccountRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseGet(() -> userRepository.findByEmail(username)
+                        .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username)));
+        return createAccount(user.getId(), request);
+    }
+
+    @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = RedisConfig.ACCOUNTS_CACHE, key = "#accountNumber")
     public AccountResponse getAccountByNumber(String accountNumber) {
         Account account = accountRepository.findByAccountNumber(accountNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found with number: " + accountNumber));
@@ -60,6 +75,7 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = RedisConfig.USER_ACCOUNTS_CACHE, key = "#userId")
     public List<AccountResponse> getAccountsByUserId(Long userId) {
         return accountRepository.findByUserId(userId).stream()
                 .map(accountMapper::toDto)
@@ -67,7 +83,20 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<AccountResponse> getAccountsByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseGet(() -> userRepository.findByEmail(username)
+                        .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username)));
+        return getAccountsByUserId(user.getId());
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
+    @Caching(evict = {
+            @CacheEvict(value = RedisConfig.ACCOUNTS_CACHE, key = "#accountNumber"),
+            @CacheEvict(value = RedisConfig.USER_ACCOUNTS_CACHE, allEntries = true)
+    })
     public AccountResponse deposit(String accountNumber, DepositWithdrawRequest request) {
         BigDecimal amount = request.getAmount();
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
@@ -90,6 +119,10 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @Caching(evict = {
+            @CacheEvict(value = RedisConfig.ACCOUNTS_CACHE, key = "#accountNumber"),
+            @CacheEvict(value = RedisConfig.USER_ACCOUNTS_CACHE, allEntries = true)
+    })
     public AccountResponse withdraw(String accountNumber, DepositWithdrawRequest request) {
         BigDecimal amount = request.getAmount();
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {

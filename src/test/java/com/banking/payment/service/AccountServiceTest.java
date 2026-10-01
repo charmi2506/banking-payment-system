@@ -131,4 +131,35 @@ class AccountServiceTest {
         assertThrows(InsufficientBalanceException.class, () -> accountService.withdraw("ACC12345678", request));
         verify(accountRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("Should create account for username successfully")
+    void testCreateAccountForUsername_Success() {
+        CreateAccountRequest request = new CreateAccountRequest();
+        request.setType(AccountType.CHECKING);
+        request.setInitialBalance(new BigDecimal("250.00"));
+
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(accountRepository.save(any(Account.class))).thenReturn(account);
+        when(accountMapper.toDto(any(Account.class))).thenReturn(AccountResponse.builder().accountNumber("ACC12345678").build());
+
+        AccountResponse result = accountService.createAccountForUsername("testuser", request);
+
+        assertNotNull(result);
+        assertEquals("ACC12345678", result.getAccountNumber());
+    }
+
+    @Test
+    @DisplayName("Should get accounts by username successfully")
+    void testGetAccountsByUsername_Success() {
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(accountRepository.findByUserId(1L)).thenReturn(java.util.List.of(account));
+        when(accountMapper.toDto(account)).thenReturn(AccountResponse.builder().accountNumber("ACC12345678").build());
+
+        java.util.List<AccountResponse> results = accountService.getAccountsByUsername("testuser");
+
+        assertEquals(1, results.size());
+        assertEquals("ACC12345678", results.get(0).getAccountNumber());
+    }
 }

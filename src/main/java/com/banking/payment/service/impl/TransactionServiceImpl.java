@@ -1,9 +1,11 @@
 package com.banking.payment.service.impl;
 
 import com.banking.payment.dto.request.TransferRequest;
+import com.banking.payment.dto.response.TransactionResponse;
 import com.banking.payment.dto.response.TransferResponse;
 import com.banking.payment.entity.Account;
 import com.banking.payment.entity.Transaction;
+import com.banking.payment.entity.User;
 import com.banking.payment.entity.enums.AccountStatus;
 import com.banking.payment.entity.enums.TransactionStatus;
 import com.banking.payment.entity.enums.TransactionType;
@@ -12,16 +14,29 @@ import com.banking.payment.exception.InvalidTransactionException;
 import com.banking.payment.exception.ResourceNotFoundException;
 import com.banking.payment.mapper.TransactionMapper;
 import com.banking.payment.repository.AccountRepository;
+import com.banking.payment.config.RedisConfig;
 import com.banking.payment.repository.TransactionRepository;
+import com.banking.payment.repository.UserRepository;
+import com.banking.payment.repository.specification.TransactionSpecification;
 import com.banking.payment.service.IdempotencyService;
 import com.banking.payment.service.TransactionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,9 +47,11 @@ public class TransactionServiceImpl implements TransactionService {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final UserRepository userRepository;
     private final IdempotencyService idempotencyService;
     private final TransactionMapper transactionMapper;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final CacheManager cacheManager;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -135,6 +152,9 @@ public class TransactionServiceImpl implements TransactionService {
         Transaction savedTxn = transactionRepository.save(transaction);
         TransferResponse response = transactionMapper.toTransferResponse(savedTxn);
 
+        // Evict cached account balances so subsequent balance inquiries never return stale balances
+        evictAccountCaches(request.getSourceAccountNumber(), request.getDestinationAccountNumber());
+
         // Publish event to Kafka
         try {
             kafkaTemplate.send("banking.transaction.events", savedTxn.getReferenceNumber(), response);
@@ -145,11 +165,98 @@ public class TransactionServiceImpl implements TransactionService {
         return response;
     }
 
+    private void evictAccountCaches(String sourceAccountNumber, String destinationAccountNumber) {
+        if (cacheManager != null) {
+            try {
+                Cache accountsCache = cacheManager.getCache(RedisConfig.ACCOUNTS_CACHE);
+                if (accountsCache != null) {
+                    accountsCache.evict(sourceAccountNumber);
+                    accountsCache.evict(destinationAccountNumber);
+                }
+                Cache userAccountsCache = cacheManager.getCache(RedisConfig.USER_ACCOUNTS_CACHE);
+                if (userAccountsCache != null) {
+                    userAccountsCache.clear();
+                }
+            } catch (Exception ex) {
+                log.warn("Failed to evict caches after fund transfer: {}", ex.getMessage());
+            }
+        }
+    }
+
     @Override
     @Transactional(readOnly = true)
     public TransferResponse getTransactionByReference(String referenceNumber) {
         Transaction transaction = transactionRepository.findByReferenceNumber(referenceNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Transaction not found: " + referenceNumber));
         return transactionMapper.toTransferResponse(transaction);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<TransactionResponse> getTransactionHistory(
+            String username,
+            String accountNumber,
+            TransactionType type,
+            TransactionStatus status,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            Pageable pageable) {
+
+        // 1. Resolve authenticated user
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+
+        // 2. Fetch all accounts owned by this user
+        List<Account> userAccounts = accountRepository.findByUserId(user.getId());
+
+        Account specificAccount = null;
+        if (accountNumber != null && !accountNumber.isBlank()) {
+            String trimmedAccNum = accountNumber.trim();
+            specificAccount = userAccounts.stream()
+                    .filter(a -> a.getAccountNumber().equalsIgnoreCase(trimmedAccNum))
+                    .findFirst()
+                    .orElse(null);
+
+            if (specificAccount == null) {
+                // If account exists in system but does not belong to this user -> Access Denied (403)
+                boolean accountExists = accountRepository.findByAccountNumber(trimmedAccNum).isPresent();
+                if (accountExists) {
+                    throw new AccessDeniedException("Access denied: You do not own account " + trimmedAccNum);
+                } else {
+                    throw new ResourceNotFoundException("Account not found: " + trimmedAccNum);
+                }
+            }
+        }
+
+        // 3. If no specific account requested and user owns no accounts, return empty page
+        if (specificAccount == null && userAccounts.isEmpty()) {
+            Pageable defaultPageable = (pageable == null || pageable.getSort().isUnsorted())
+                    ? PageRequest.of(pageable != null ? pageable.getPageNumber() : 0,
+                            pageable != null ? pageable.getPageSize() : 20,
+                            Sort.by(Sort.Direction.DESC, "createdAt"))
+                    : pageable;
+            return Page.empty(defaultPageable);
+        }
+
+        // 4. Validate date range filters
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new InvalidTransactionException("Start date cannot be after end date.");
+        }
+
+        // 5. Enforce default sorting by newest first (createdAt DESC)
+        Pageable effectivePageable = (pageable == null || pageable.getSort().isUnsorted())
+                ? PageRequest.of(
+                        pageable != null ? pageable.getPageNumber() : 0,
+                        pageable != null ? pageable.getPageSize() : 20,
+                        Sort.by(Sort.Direction.DESC, "createdAt"))
+                : pageable;
+
+        // 6. Build dynamic JPA specification
+        Specification<Transaction> spec = TransactionSpecification.filterTransactions(
+                userAccounts, specificAccount, type, status, startDate, endDate);
+
+        // 7. Query repository and map to response DTOs
+        Page<Transaction> transactionPage = transactionRepository.findAll(spec, effectivePageable);
+        return transactionPage.map(transactionMapper::toTransactionResponse);
     }
 }

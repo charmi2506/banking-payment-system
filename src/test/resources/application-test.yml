@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -8,6 +8,11 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  cache:
+    type: simple
   data:
     redis:
       repositories:
@@ -16,8 +21,38 @@ spring:
     bootstrap-servers: localhost:9092
     listener:
       auto-startup: false
+    admin:
+      auto-create: false
+      fail-fast: false
 
 app:
   jwt:
     secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
     expiration-ms: 86400000
+  cache:
+    default-ttl-seconds: 300
+    accounts-ttl-seconds: 300
+    user-accounts-ttl-seconds: 300
+  rate-limit:
+    enabled: true
+    auth-login:
+      limit: 5
+      window-seconds: 60
+    transfer:
+      limit: 10
+      window-seconds: 60
+    deposit:
+      limit: 20
+      window-seconds: 60
+    withdraw:
+      limit: 10
+      window-seconds: 60
+  kafka:
+    topics:
+      transaction-events: banking.transaction.events
+      audit-logs: banking.audit.logs
+      notifications: banking.notifications
+
+springdoc:
+  api-docs:
+    enabled: true
